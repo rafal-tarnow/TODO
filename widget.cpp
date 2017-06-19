@@ -48,6 +48,10 @@ void Widget::createMinimalizeToTry(void)
 
 }
 
+void Widget::setEditTabProperties(QTextEdit * textEdit){
+
+}
+
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget),
@@ -63,10 +67,6 @@ Widget::Widget(QWidget *parent) :
 
     readAndSetWindowGeometry();
 
-
-    QFont font("Purisa", 10, QFont::Bold);
-
-    ui->textEdit->setFont(font);
 
     restoreNotes();
 
@@ -89,6 +89,10 @@ Widget::~Widget()
 
     delete icon;
     delete ui;
+
+    if(newTabNameForm != nullptr){
+        delete newTabNameForm;
+    }
 }
 
 void Widget::closeEvent(QCloseEvent *event)
@@ -157,4 +161,37 @@ void Widget::saveWindowGeometry(){
     settings.setValue("windowXposition",this->pos().x());
     settings.setValue("windowYposition",this->pos().y());
     settings.sync();
+}
+
+void Widget::onNewFormNameOKClicked(){
+    this->insertNewTab();
+}
+
+void Widget::onNewFormNameCancelClicked(){
+
+}
+
+void Widget::insertNewTab(){
+
+    QString newTabName = newTabNameForm->getText();
+
+    QTextEdit * textEdit = new QTextEdit();
+    ui->tabWidget->insertTab(ui->tabWidget->currentIndex(),textEdit,newTabName);
+    ui->tabWidget->setCurrentIndex(ui->tabWidget->currentIndex()-1);
+
+}
+
+void Widget::on_tabWidget_tabBarClicked(int index)
+{
+    if("+" == ui->tabWidget->tabText(index)){
+
+
+        if(newTabNameForm == nullptr){
+            newTabNameForm = new NewTabNameForm();
+            connect(newTabNameForm,SIGNAL(onOKClicked()),this,SLOT(onNewFormNameOKClicked()));
+            connect(newTabNameForm,SIGNAL(onCancelClicked()),this,SLOT(onNewFormNameCancelClicked()));
+        }
+        newTabNameForm->show();
+
+    }
 }

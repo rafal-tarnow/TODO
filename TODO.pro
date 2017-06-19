@@ -13,8 +13,11 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        widget.cpp
+        widget.cpp \
+    newtabnameform.cpp
 
-HEADERS  += widget.hpp
+HEADERS  += widget.hpp \
+    newtabnameform.hpp
 
-FORMS    += widget.ui
+FORMS    += widget.ui \
+    newtabnameform.ui

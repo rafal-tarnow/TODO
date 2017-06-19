@@ -6,6 +6,8 @@
 #include <QMenu>
 #include <QCloseEvent>
 #include <QTimer>
+#include <QTextEdit>
+#include "newtabnameform.hpp"
 
 namespace Ui {
 class Widget;
@@ -23,8 +25,14 @@ private slots:
     void on_close();
     void onTextChanged();
     void timeoutTextChanged();
+    void on_tabWidget_tabBarClicked(int index);
+    void onNewFormNameOKClicked();
+    void onNewFormNameCancelClicked();
+
 
 private:
+    void insertNewTab();
+    void setEditTabProperties(QTextEdit * editText);
     void readAndSetWindowGeometry();
     void saveWindowGeometry();
     void restoreNotes();
@@ -40,6 +48,8 @@ private:
    const QString organizationName;
    const QString applicationName;
    const QString notesContetKey;
+
+   NewTabNameForm * newTabNameForm = nullptr;
 
    QTimer * timerZapisu;
 
