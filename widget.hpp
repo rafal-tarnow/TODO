@@ -5,6 +5,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QCloseEvent>
+#include <QTimer>
 
 namespace Ui {
 class Widget;
@@ -19,11 +20,14 @@ public:
     ~Widget();
 
 private slots:
-   void on_close();
+    void on_close();
+    void onTextChanged();
+    void timeoutTextChanged();
 
 private:
     void readAndSetWindowGeometry();
     void saveWindowGeometry();
+    void restoreNotes();
     void saveNotes();
     void closeEvent(QCloseEvent *event);
     void createMinimalizeToTry();
@@ -35,6 +39,9 @@ private:
 
    const QString organizationName;
    const QString applicationName;
+   const QString notesContetKey;
+
+   QTimer * timerZapisu;
 
     QSystemTrayIcon *icon;
     QMenu *menu;

@@ -35,6 +35,11 @@ void Widget::createMinimalizeToTry(void)
     connect (restore, SIGNAL(triggered()), this, SLOT(showNormal()));
 
 
+    connect(ui->textEdit,SIGNAL(textChanged()),this,SLOT(onTextChanged()));
+
+    timerZapisu = new QTimer();
+    connect(timerZapisu, SIGNAL(timeout()),this, SLOT(timeoutTextChanged()));
+
     menu->addAction(hide_window);
     menu->addAction(restore);
     menu->addAction(quitAction);
@@ -47,7 +52,8 @@ Widget::Widget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget),
     organizationName("Reyfel"),
-    applicationName("TODO List")
+    applicationName("TODO List"),
+    notesContetKey("NotesContent")
 {
     ui->setupUi(this);
     this->setWindowTitle(applicationName);
@@ -62,14 +68,14 @@ Widget::Widget(QWidget *parent) :
 
     ui->textEdit->setFont(font);
 
+    restoreNotes();
+
 }
 
 Widget::~Widget()
 {
 
-
     saveNotes();
-
     saveWindowGeometry();
 
     menu->removeAction(quitAction);
@@ -97,6 +103,16 @@ void Widget::on_close()
     QApplication::quit();
 }
 
+void Widget::onTextChanged(){
+    qDebug() << "On text changed()" ;
+    timerZapisu->start(10000);
+}
+
+void Widget::timeoutTextChanged(){
+    qDebug() << "Save notes timer()";
+    timerZapisu->stop();
+    saveNotes();
+}
 
 void Widget::readAndSetWindowGeometry(){
     int windowHeight;
@@ -121,18 +137,15 @@ void Widget::readAndSetWindowGeometry(){
     this->setGeometry(windowXposition,windowYposition,windowWidth,windowHeight);
 }
 
+void Widget::restoreNotes(){
+    QSettings settings(organizationName, applicationName);
+    ui->textEdit->setText(settings.value(notesContetKey).toString());
+}
 
 void Widget::saveNotes(){
 
     QSettings settings(organizationName, applicationName);
-
-    for(int i = 0; i < ui->tabWidget->count(); i++){
-
-        settings.beginGroup(ui->tabWidget->tabText(i));
-        settings.setValue("Contet", ui->size());
-        settings.endGroup();
-    }
-
+    settings.setValue(notesContetKey, ui->textEdit->toPlainText());
     settings.sync();
 
 }
