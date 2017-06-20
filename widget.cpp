@@ -35,8 +35,6 @@ void Widget::createMinimalizeToTry(void)
     connect (restore, SIGNAL(triggered()), this, SLOT(showNormal()));
 
 
-    connect(ui->textEdit,SIGNAL(textChanged()),this,SLOT(onTextChanged()));
-
     timerZapisu = new QTimer();
     connect(timerZapisu, SIGNAL(timeout()),this, SLOT(timeoutTextChanged()));
 
@@ -61,7 +59,7 @@ Widget::Widget(QWidget *parent) :
 {
     ui->setupUi(this);
     this->setWindowTitle(applicationName);
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnBottomHint);
+    setWindowFlags(/*Qt::FramelessWindowHint |*/ Qt::WindowStaysOnBottomHint);
 
     createMinimalizeToTry();
 
@@ -109,7 +107,7 @@ void Widget::on_close()
 
 void Widget::onTextChanged(){
     qDebug() << "On text changed()" ;
-    timerZapisu->start(10000);
+    timerZapisu->start(10000); //zapisz zawartosc po 10sekundach od ostatniej zmiany
 }
 
 void Widget::timeoutTextChanged(){
@@ -143,13 +141,34 @@ void Widget::readAndSetWindowGeometry(){
 
 void Widget::restoreNotes(){
     QSettings settings(organizationName, applicationName);
-    ui->textEdit->setText(settings.value(notesContetKey).toString());
+
+    int notesCount = settings.value("notesCount").toInt();
+
+    for(int i = 0; i < notesCount; i++){
+        settings.beginGroup(QString::number(i));
+        {
+            this->insertNewTab(settings.value("noteName").toString(),settings.value("noteContent").toString(), i);
+        }
+        settings.endGroup();
+    }
 }
 
 void Widget::saveNotes(){
 
+    int notesCount = ui->tabWidget->count() - 1;// number of tabs minus "+" tab
+
     QSettings settings(organizationName, applicationName);
-    settings.setValue(notesContetKey, ui->textEdit->toPlainText());
+    settings.setValue("notesCount",notesCount);
+
+    for(int i = 0; i < notesCount; i++){
+        settings.beginGroup(QString::number(i));
+        {
+            settings.setValue("noteName", ui->tabWidget->tabText(i));
+            settings.setValue("noteContent",(static_cast<QTextEdit *>(ui->tabWidget->widget(i)))->toPlainText());
+        }
+        settings.endGroup();
+    }
+
     settings.sync();
 
 }
@@ -164,28 +183,25 @@ void Widget::saveWindowGeometry(){
 }
 
 void Widget::onNewFormNameOKClicked(){
-    this->insertNewTab();
+    QString newTabName = newTabNameForm->getText();
+    this->insertNewTab(newTabName,"", ui->tabWidget->currentIndex());
 }
 
 void Widget::onNewFormNameCancelClicked(){
 
 }
 
-void Widget::insertNewTab(){
-
-    QString newTabName = newTabNameForm->getText();
-
+void Widget::insertNewTab(QString tabName, QString tabContent, int index){
     QTextEdit * textEdit = new QTextEdit();
-    ui->tabWidget->insertTab(ui->tabWidget->currentIndex(),textEdit,newTabName);
+    textEdit->setText(tabContent);
+    ui->tabWidget->insertTab(index,textEdit,tabName);
     ui->tabWidget->setCurrentIndex(ui->tabWidget->currentIndex()-1);
 
+    connect(textEdit,SIGNAL(textChanged()),this,SLOT(onTextChanged()));
 }
 
-void Widget::on_tabWidget_tabBarClicked(int index)
-{
+void Widget::on_tabWidget_tabBarClicked(int index){
     if("+" == ui->tabWidget->tabText(index)){
-
-
         if(newTabNameForm == nullptr){
             newTabNameForm = new NewTabNameForm();
             connect(newTabNameForm,SIGNAL(onOKClicked()),this,SLOT(onNewFormNameOKClicked()));

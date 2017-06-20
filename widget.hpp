@@ -31,7 +31,7 @@ private slots:
 
 
 private:
-    void insertNewTab();
+    void insertNewTab(QString tabName, QString tabContent, int index);
     void setEditTabProperties(QTextEdit * editText);
     void readAndSetWindowGeometry();
     void saveWindowGeometry();
