@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QDebug>
+#include <QMessageBox>
 
 void Widget::createMinimalizeToTry(void)
 {
@@ -68,6 +69,14 @@ Widget::Widget(QWidget *parent) :
 
     restoreNotes();
 
+    ui->tabWidget->setMovable(true);
+
+    ui->tabWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->tabWidget,SIGNAL(customContextMenuRequested(QPoint )),this , SLOT(showTabContextMenu(QPoint )));
+            connect(ui->tabWidget, SIGNAL(tabBarClicked(int)),this, SLOT(onTabContextMenuRequest(int)));
+
+
+
 }
 
 Widget::~Widget()
@@ -91,6 +100,18 @@ Widget::~Widget()
     if(newTabNameForm != nullptr){
         delete newTabNameForm;
     }
+
+}
+
+void Widget::showTabContextMenu(QPoint point){
+
+    QAction *closeTabAction = new QAction(this);
+    closeTabAction->setText("Delete List");
+    connect(closeTabAction, SIGNAL(triggered()),this, SLOT(deleteTabRequest()));
+
+    QMenu *tabWidgetContextMenu = new QMenu;
+    tabWidgetContextMenu->addAction(closeTabAction);
+    tabWidgetContextMenu->exec(ui->tabWidget->mapToGlobal(point));
 }
 
 void Widget::closeEvent(QCloseEvent *event)
@@ -99,6 +120,27 @@ void Widget::closeEvent(QCloseEvent *event)
     event->ignore();
 }
 
+void Widget::deleteTabRequest(){
+    qDebug() << "Widget::deleteTab()";
+
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("WARNING");
+    msgBox.setText("Do you really want delete task list?");
+    msgBox.setStandardButtons(QMessageBox::No);
+    msgBox.addButton(QMessageBox::Yes);
+    msgBox.setDefaultButton(QMessageBox::No);
+    if(msgBox.exec() == QMessageBox::Yes){
+      this->deleteTab();
+    }else {
+      // do something else
+    }
+
+}
+
+void Widget::deleteTab(){
+    ui->tabWidget->removeTab(ui->tabWidget->currentIndex());
+    saveNotes();
+}
 
 void Widget::on_close()
 {

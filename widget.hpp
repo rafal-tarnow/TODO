@@ -7,6 +7,7 @@
 #include <QCloseEvent>
 #include <QTimer>
 #include <QTextEdit>
+#include <QPoint>
 #include "newtabnameform.hpp"
 
 namespace Ui {
@@ -21,16 +22,20 @@ public:
     explicit Widget(QWidget *parent = 0);
     ~Widget();
 
+protected:
+
 private slots:
+    void deleteTabRequest();
     void on_close();
     void onTextChanged();
     void timeoutTextChanged();
     void on_tabWidget_tabBarClicked(int index);
     void onNewFormNameOKClicked();
     void onNewFormNameCancelClicked();
-
+    void showTabContextMenu(QPoint );
 
 private:
+    void deleteTab();
     void insertNewTab(QString tabName, QString tabContent, int index);
     void setEditTabProperties(QTextEdit * editText);
     void readAndSetWindowGeometry();
@@ -39,6 +44,7 @@ private:
     void saveNotes();
     void closeEvent(QCloseEvent *event);
     void createMinimalizeToTry();
+
 
 
 
