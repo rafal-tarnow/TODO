@@ -8,6 +8,7 @@
 #include <QDesktopWidget>
 #include <QDebug>
 #include <QMessageBox>
+#include <QDateTime>
 
 void Widget::createMinimalizeToTry(void)
 {
@@ -25,7 +26,6 @@ void Widget::createMinimalizeToTry(void)
 
     menu = new QMenu(this);
 
-
     hide_window = new QAction("Minimalizuj",this);
     connect( hide_window,SIGNAL(triggered()),this,SLOT(hide()));
 
@@ -35,7 +35,6 @@ void Widget::createMinimalizeToTry(void)
     restore = new QAction("Przywróć", this);
     connect (restore, SIGNAL(triggered()), this, SLOT(showNormal()));
 
-
     timerZapisu = new QTimer();
     connect(timerZapisu, SIGNAL(timeout()),this, SLOT(timeoutTextChanged()));
 
@@ -44,10 +43,28 @@ void Widget::createMinimalizeToTry(void)
     menu->addAction(quitAction);
 
     icon->setContextMenu(menu);
-
 }
 
-void Widget::setEditTabProperties(QTextEdit * textEdit){
+
+void Widget::timerLabelRefreshSlot()
+{
+    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
+    diffTimeString = QString("%1").arg(QDateTime().fromString(startTimeString ,"hh:mm:ss AP dd/MM/yyyy").secsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy")));
+
+    ui->labelDiffTime->setText(secondsToString(diffTimeString.toInt()));
+}
+
+QString Widget::secondsToString(qint64 seconds)
+{
+  const qint64 DAY = 86400;
+  qint64 days = seconds / DAY;
+  QTime t = QTime(0,0).addSecs(seconds % DAY);
+  return QString("%1 days, %2 hours, %3 minutes, %4 seconds")
+    .arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
+}
+
+void Widget::setEditTabProperties(QTextEdit * textEdit)
+{
 
 }
 
@@ -66,22 +83,30 @@ Widget::Widget(QWidget *parent) :
 
     readAndSetWindowGeometry();
 
-
     restoreNotes();
 
     ui->tabWidget->setMovable(true);
 
     ui->tabWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tabWidget,SIGNAL(customContextMenuRequested(QPoint )),this , SLOT(showTabContextMenu(QPoint )));
-            connect(ui->tabWidget, SIGNAL(tabBarClicked(int)),this, SLOT(onTabContextMenuRequest(int)));
+    connect(ui->tabWidget, SIGNAL(tabBarClicked(int)),this, SLOT(onTabContextMenuRequest(int)));
 
 
+    timerLabelRefresh = new QTimer();
+    connect(timerLabelRefresh, SIGNAL(timeout()), this, SLOT(timerLabelRefreshSlot()));
+    timerLabelRefresh->start(1000);
 
+
+    startTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
+    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
+    diffTimeString = QString("%1").arg(QDateTime().fromString(startTimeString ,"hh:mm:ss AP dd/MM/yyyy").msecsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy")));
+
+    ui->labelStartTime->setText(startTimeString);
+    ui->labelDiffTime->setText(diffTimeString);
 }
 
 Widget::~Widget()
 {
-
     saveNotes();
     saveWindowGeometry();
 
@@ -130,9 +155,9 @@ void Widget::deleteTabRequest(){
     msgBox.addButton(QMessageBox::Yes);
     msgBox.setDefaultButton(QMessageBox::No);
     if(msgBox.exec() == QMessageBox::Yes){
-      this->deleteTab();
+        this->deleteTab();
     }else {
-      // do something else
+        // do something else
     }
 
 }
@@ -177,7 +202,6 @@ void Widget::readAndSetWindowGeometry(){
         windowWidth = 480;
     }
 
-
     this->setGeometry(windowXposition,windowYposition,windowWidth,windowHeight);
 }
 
@@ -195,8 +219,8 @@ void Widget::restoreNotes(){
     }
 }
 
-void Widget::saveNotes(){
-
+void Widget::saveNotes()
+{
     int notesCount = ui->tabWidget->count() - 1;// number of tabs minus "+" tab
 
     QSettings settings(organizationName, applicationName);
@@ -212,10 +236,11 @@ void Widget::saveNotes(){
     }
 
     settings.sync();
-
 }
 
-void Widget::saveWindowGeometry(){
+
+void Widget::saveWindowGeometry()
+{
     QSettings settings(organizationName, applicationName);
     settings.setValue("windowHeight",this->height());
     settings.setValue("windowWidth",this->width());
@@ -224,16 +249,21 @@ void Widget::saveWindowGeometry(){
     settings.sync();
 }
 
-void Widget::onNewFormNameOKClicked(){
+
+void Widget::onNewFormNameOKClicked()
+{
     QString newTabName = newTabNameForm->getText();
     this->insertNewTab(newTabName,"", ui->tabWidget->currentIndex());
 }
 
-void Widget::onNewFormNameCancelClicked(){
+
+void Widget::onNewFormNameCancelClicked()
+{
 
 }
 
-void Widget::insertNewTab(QString tabName, QString tabContent, int index){
+void Widget::insertNewTab(QString tabName, QString tabContent, int index)
+{
     QTextEdit * textEdit = new QTextEdit();
     textEdit->setText(tabContent);
     ui->tabWidget->insertTab(index,textEdit,tabName);
@@ -242,7 +272,8 @@ void Widget::insertNewTab(QString tabName, QString tabContent, int index){
     connect(textEdit,SIGNAL(textChanged()),this,SLOT(onTextChanged()));
 }
 
-void Widget::on_tabWidget_tabBarClicked(int index){
+void Widget::on_tabWidget_tabBarClicked(int index)
+{
     if("+" == ui->tabWidget->tabText(index)){
         if(newTabNameForm == nullptr){
             newTabNameForm = new NewTabNameForm();

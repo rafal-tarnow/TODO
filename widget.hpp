@@ -45,10 +45,10 @@ private:
     void closeEvent(QCloseEvent *event);
     void createMinimalizeToTry();
 
+private slots:
+    void timerLabelRefreshSlot();
 
-
-
-
+private:
     Ui::Widget *ui;
 
    const QString organizationName;
@@ -58,12 +58,18 @@ private:
    NewTabNameForm * newTabNameForm = nullptr;
 
    QTimer * timerZapisu;
+   QTimer * timerLabelRefresh;
 
     QSystemTrayIcon *icon;
     QMenu *menu;
     QAction *hide_window;
     QAction *quitAction;
     QAction *restore;
+
+    QString startTimeString;
+    QString currentTimeString;
+    QString diffTimeString;
+    QString secondsToString(qint64 seconds);
 };
 
 #endif // WIDGET_HPP
