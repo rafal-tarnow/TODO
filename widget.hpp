@@ -48,6 +48,7 @@ private:
     QString getDiffTimeString();
     qint64 getDiffTimeInt();
     void saveTime();
+    QString getCurrentDate();
 
 private slots:
     void timerLabelRefreshSlot();

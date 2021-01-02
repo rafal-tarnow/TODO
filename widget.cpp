@@ -10,6 +10,71 @@
 #include <QMessageBox>
 #include <QDateTime>
 
+
+Widget::Widget(QWidget *parent) :
+    QWidget(parent),
+    ui(new Ui::Widget),
+    organizationName("Reyfel"),
+    applicationName("TODO List"),
+    notesContetKey("NotesContent")
+{
+    ui->setupUi(this);
+    this->setWindowTitle(applicationName);
+    setWindowFlags(/*Qt::FramelessWindowHint |*/ Qt::WindowStaysOnBottomHint);
+
+    createMinimalizeToTry();
+
+    readAndSetWindowGeometry();
+    restoreNotes();
+    restoreTime();
+
+    ui->tabWidget->setMovable(true);
+
+    ui->tabWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->tabWidget,SIGNAL(customContextMenuRequested(QPoint )),this , SLOT(showTabContextMenu(QPoint )));
+    connect(ui->tabWidget, SIGNAL(tabBarClicked(int)),this, SLOT(onTabContextMenuRequest(int)));
+
+
+    timerLabelRefresh = new QTimer();
+    connect(timerLabelRefresh, SIGNAL(timeout()), this, SLOT(timerLabelRefreshSlot()));
+    timerLabelRefresh->start(1000);
+
+
+    startTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
+    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
+    diffTimeString = QString("%1").arg(QDateTime().fromString(startTimeString ,"hh:mm:ss AP dd/MM/yyyy").msecsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy")));
+
+    ui->labelStartTime->setText(startTimeString);
+    ui->labelDiffTime->setText(diffTimeString);
+}
+
+
+Widget::~Widget()
+{
+    saveTime();
+    saveNotes();
+    saveWindowGeometry();
+
+    menu->removeAction(quitAction);
+    menu->removeAction(restore);
+    menu->removeAction(hide_window);
+
+    delete restore;
+    delete quitAction;
+    delete hide_window;
+    delete menu;
+
+    delete icon;
+    delete ui;
+
+    if(newTabNameForm != nullptr)
+    {
+        delete newTabNameForm;
+    }
+
+}
+
+
 void Widget::createMinimalizeToTry(void)
 {
     icon= new QSystemTrayIcon(this);
@@ -54,6 +119,7 @@ void Widget::timerLabelRefreshSlot()
     ui->labelTotalTime->setText(secondsToString(totalTime + getDiffTimeInt()));
 }
 
+
 QString Widget::getDiffTimeString()
 {
     QString diffTimeStringTmp;
@@ -61,11 +127,13 @@ QString Widget::getDiffTimeString()
     return diffTimeStringTmp;
 }
 
+
 qint64 Widget::getDiffTimeInt()
 {
     currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
     return QDateTime().fromString(startTimeString ,"hh:mm:ss AP dd/MM/yyyy").secsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy"));
 }
+
 
 QString Widget::secondsToString(qint64 seconds)
 {
@@ -76,69 +144,9 @@ QString Widget::secondsToString(qint64 seconds)
             .arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
 }
 
+
 void Widget::setEditTabProperties(QTextEdit * textEdit)
 {
-
-}
-
-Widget::Widget(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::Widget),
-    organizationName("Reyfel"),
-    applicationName("TODO List"),
-    notesContetKey("NotesContent")
-{
-    ui->setupUi(this);
-    this->setWindowTitle(applicationName);
-    setWindowFlags(/*Qt::FramelessWindowHint |*/ Qt::WindowStaysOnBottomHint);
-
-    createMinimalizeToTry();
-
-    readAndSetWindowGeometry();
-    restoreNotes();
-    restoreTime();
-
-    ui->tabWidget->setMovable(true);
-
-    ui->tabWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(ui->tabWidget,SIGNAL(customContextMenuRequested(QPoint )),this , SLOT(showTabContextMenu(QPoint )));
-    connect(ui->tabWidget, SIGNAL(tabBarClicked(int)),this, SLOT(onTabContextMenuRequest(int)));
-
-
-    timerLabelRefresh = new QTimer();
-    connect(timerLabelRefresh, SIGNAL(timeout()), this, SLOT(timerLabelRefreshSlot()));
-    timerLabelRefresh->start(1000);
-
-
-    startTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
-    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
-    diffTimeString = QString("%1").arg(QDateTime().fromString(startTimeString ,"hh:mm:ss AP dd/MM/yyyy").msecsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy")));
-
-    ui->labelStartTime->setText(startTimeString);
-    ui->labelDiffTime->setText(diffTimeString);
-}
-
-Widget::~Widget()
-{
-    saveTime();
-    saveNotes();
-    saveWindowGeometry();
-
-    menu->removeAction(quitAction);
-    menu->removeAction(restore);
-    menu->removeAction(hide_window);
-
-    delete restore;
-    delete quitAction;
-    delete hide_window;
-    delete menu;
-
-    delete icon;
-    delete ui;
-
-    if(newTabNameForm != nullptr){
-        delete newTabNameForm;
-    }
 
 }
 
@@ -172,9 +180,12 @@ void Widget::deleteTabRequest()
     msgBox.setStandardButtons(QMessageBox::No);
     msgBox.addButton(QMessageBox::Yes);
     msgBox.setDefaultButton(QMessageBox::No);
-    if(msgBox.exec() == QMessageBox::Yes){
+    if(msgBox.exec() == QMessageBox::Yes)
+    {
         this->deleteTab();
-    }else {
+    }
+    else
+    {
         // do something else
     }
 }
@@ -237,7 +248,8 @@ void Widget::restoreNotes()
 
     int notesCount = settings.value("notesCount").toInt();
 
-    for(int i = 0; i < notesCount; i++){
+    for(int i = 0; i < notesCount; i++)
+    {
         settings.beginGroup(QString::number(i));
         {
             this->insertNewTab(settings.value("noteName").toString(),settings.value("noteContent").toString(), i);
@@ -253,7 +265,8 @@ void Widget::saveNotes()
     QSettings settings(organizationName, applicationName);
     settings.setValue("notesCount",notesCount);
 
-    for(int i = 0; i < notesCount; i++){
+    for(int i = 0; i < notesCount; i++)
+    {
         settings.beginGroup(QString::number(i));
         {
             settings.setValue("noteName", ui->tabWidget->tabText(i));
@@ -269,15 +282,33 @@ void Widget::saveNotes()
 void Widget::restoreTime()
 {
     QSettings settings(organizationName, applicationName);
-    totalTime = settings.value("totalTime").toInt();
+
+    QString currentDateSave = settings.value("currentDate").toString();
+    QString currentDate = getCurrentDate();
+
+    if(currentDateSave != currentDate)
+    {
+        totalTime = 0;
+    }
+    else
+    {
+        totalTime = settings.value("totalTime").toInt();
+    }
 }
 
 
 void Widget::saveTime()
 {
     QSettings settings(organizationName, applicationName);
+    settings.setValue("currentDate", getCurrentDate());
     settings.setValue("totalTime", totalTime + getDiffTimeInt());
     settings.sync();
+}
+
+
+QString Widget::getCurrentDate()
+{
+    return QDateTime().currentDateTime().toString("dd/MM/yyyy");
 }
 
 
@@ -304,6 +335,7 @@ void Widget::onNewFormNameCancelClicked()
 
 }
 
+
 void Widget::insertNewTab(QString tabName, QString tabContent, int index)
 {
     QTextEdit * textEdit = new QTextEdit();
@@ -314,15 +346,17 @@ void Widget::insertNewTab(QString tabName, QString tabContent, int index)
     connect(textEdit,SIGNAL(textChanged()),this,SLOT(onTextChanged()));
 }
 
+
 void Widget::on_tabWidget_tabBarClicked(int index)
 {
-    if("+" == ui->tabWidget->tabText(index)){
-        if(newTabNameForm == nullptr){
+    if("+" == ui->tabWidget->tabText(index))
+    {
+        if(newTabNameForm == nullptr)
+        {
             newTabNameForm = new NewTabNameForm();
             connect(newTabNameForm,SIGNAL(onOKClicked()),this,SLOT(onNewFormNameOKClicked()));
             connect(newTabNameForm,SIGNAL(onCancelClicked()),this,SLOT(onNewFormNameCancelClicked()));
         }
         newTabNameForm->show();
-
     }
 }
