@@ -41,9 +41,13 @@ private:
     void readAndSetWindowGeometry();
     void saveWindowGeometry();
     void restoreNotes();
+    void restoreTime();
     void saveNotes();
     void closeEvent(QCloseEvent *event);
     void createMinimalizeToTry();
+    QString getDiffTimeString();
+    qint64 getDiffTimeInt();
+    void saveTime();
 
 private slots:
     void timerLabelRefreshSlot();
@@ -69,6 +73,7 @@ private:
     QString startTimeString;
     QString currentTimeString;
     QString diffTimeString;
+    qint64 totalTime;
     QString secondsToString(qint64 seconds);
 };
 

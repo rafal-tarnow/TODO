@@ -48,19 +48,32 @@ void Widget::createMinimalizeToTry(void)
 
 void Widget::timerLabelRefreshSlot()
 {
-    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
-    diffTimeString = QString("%1").arg(QDateTime().fromString(startTimeString ,"hh:mm:ss AP dd/MM/yyyy").secsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy")));
-
+    diffTimeString = getDiffTimeString();
     ui->labelDiffTime->setText(secondsToString(diffTimeString.toInt()));
+
+    ui->labelTotalTime->setText(secondsToString(totalTime + getDiffTimeInt()));
+}
+
+QString Widget::getDiffTimeString()
+{
+    QString diffTimeStringTmp;
+    diffTimeStringTmp = QString("%1").arg(getDiffTimeInt());
+    return diffTimeStringTmp;
+}
+
+qint64 Widget::getDiffTimeInt()
+{
+    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
+    return QDateTime().fromString(startTimeString ,"hh:mm:ss AP dd/MM/yyyy").secsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy"));
 }
 
 QString Widget::secondsToString(qint64 seconds)
 {
-  const qint64 DAY = 86400;
-  qint64 days = seconds / DAY;
-  QTime t = QTime(0,0).addSecs(seconds % DAY);
-  return QString("%1 days, %2 hours, %3 minutes, %4 seconds")
-    .arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
+    const qint64 DAY = 86400;
+    qint64 days = seconds / DAY;
+    QTime t = QTime(0,0).addSecs(seconds % DAY);
+    return QString("%1 days, %2 hours, %3 minutes, %4 seconds")
+            .arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
 }
 
 void Widget::setEditTabProperties(QTextEdit * textEdit)
@@ -82,8 +95,8 @@ Widget::Widget(QWidget *parent) :
     createMinimalizeToTry();
 
     readAndSetWindowGeometry();
-
     restoreNotes();
+    restoreTime();
 
     ui->tabWidget->setMovable(true);
 
@@ -107,6 +120,7 @@ Widget::Widget(QWidget *parent) :
 
 Widget::~Widget()
 {
+    saveTime();
     saveNotes();
     saveWindowGeometry();
 
@@ -128,8 +142,9 @@ Widget::~Widget()
 
 }
 
-void Widget::showTabContextMenu(QPoint point){
 
+void Widget::showTabContextMenu(QPoint point)
+{
     QAction *closeTabAction = new QAction(this);
     closeTabAction->setText("Delete List");
     connect(closeTabAction, SIGNAL(triggered()),this, SLOT(deleteTabRequest()));
@@ -139,13 +154,16 @@ void Widget::showTabContextMenu(QPoint point){
     tabWidgetContextMenu->exec(ui->tabWidget->mapToGlobal(point));
 }
 
+
 void Widget::closeEvent(QCloseEvent *event)
 {
     hide();
     event->ignore();
 }
 
-void Widget::deleteTabRequest(){
+
+void Widget::deleteTabRequest()
+{
     qDebug() << "Widget::deleteTab()";
 
     QMessageBox msgBox;
@@ -159,23 +177,28 @@ void Widget::deleteTabRequest(){
     }else {
         // do something else
     }
-
 }
 
-void Widget::deleteTab(){
+
+void Widget::deleteTab()
+{
     ui->tabWidget->removeTab(ui->tabWidget->currentIndex());
     saveNotes();
 }
+
 
 void Widget::on_close()
 {
     QApplication::quit();
 }
 
-void Widget::onTextChanged(){
+
+void Widget::onTextChanged()
+{
     qDebug() << "On text changed()" ;
     timerZapisu->start(10000); //zapisz zawartosc po 10sekundach od ostatniej zmiany
 }
+
 
 void Widget::timeoutTextChanged(){
     qDebug() << "Save notes timer()";
@@ -183,7 +206,9 @@ void Widget::timeoutTextChanged(){
     saveNotes();
 }
 
-void Widget::readAndSetWindowGeometry(){
+
+void Widget::readAndSetWindowGeometry()
+{
     int windowHeight;
     int windowWidth;
     int windowXposition;
@@ -205,7 +230,9 @@ void Widget::readAndSetWindowGeometry(){
     this->setGeometry(windowXposition,windowYposition,windowWidth,windowHeight);
 }
 
-void Widget::restoreNotes(){
+
+void Widget::restoreNotes()
+{
     QSettings settings(organizationName, applicationName);
 
     int notesCount = settings.value("notesCount").toInt();
@@ -235,6 +262,21 @@ void Widget::saveNotes()
         settings.endGroup();
     }
 
+    settings.sync();
+}
+
+
+void Widget::restoreTime()
+{
+    QSettings settings(organizationName, applicationName);
+    totalTime = settings.value("totalTime").toInt();
+}
+
+
+void Widget::saveTime()
+{
+    QSettings settings(organizationName, applicationName);
+    settings.setValue("totalTime", totalTime + getDiffTimeInt());
     settings.sync();
 }
 
