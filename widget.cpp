@@ -40,9 +40,9 @@ Widget::Widget(QWidget *parent) :
     timerLabelRefresh->start(1000);
 
 
-    startTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
-    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
-    diffTimeString = QString("%1").arg(QDateTime().fromString(startTimeString ,"hh:mm:ss AP dd/MM/yyyy").msecsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy")));
+    startTimeString = QDateTime().currentDateTime().toString("hh:mm:ss  dd/MM/yyyy");
+    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss  dd/MM/yyyy");
+    diffTimeString = QString("%1").arg(QDateTime().fromString(startTimeString ,"hh:mm:ss  dd/MM/yyyy").msecsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy")));
 
     ui->labelStartTime->setText(startTimeString);
     ui->labelDiffTime->setText(diffTimeString);
@@ -130,8 +130,8 @@ QString Widget::getDiffTimeString()
 
 qint64 Widget::getDiffTimeInt()
 {
-    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss AP dd/MM/yyyy");
-    return QDateTime().fromString(startTimeString ,"hh:mm:ss AP dd/MM/yyyy").secsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy"));
+    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss  dd/MM/yyyy");
+    return QDateTime().fromString(startTimeString ,"hh:mm:ss  dd/MM/yyyy").secsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss  dd/MM/yyyy"));
 }
 
 
