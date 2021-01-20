@@ -9,7 +9,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QDateTime>
-
+#include <QApplication>
 
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
@@ -20,6 +20,7 @@ Widget::Widget(QWidget *parent) :
 {
     ui->setupUi(this);
     this->setWindowTitle(applicationName);
+    this->setAttribute(Qt::WA_DeleteOnClose);
     setWindowFlags(/*Qt::FramelessWindowHint |*/ Qt::WindowStaysOnBottomHint);
 
     createMinimalizeToTry();
@@ -32,12 +33,16 @@ Widget::Widget(QWidget *parent) :
 
     ui->tabWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tabWidget,SIGNAL(customContextMenuRequested(QPoint )),this , SLOT(showTabContextMenu(QPoint )));
-    connect(ui->tabWidget, SIGNAL(tabBarClicked(int)),this, SLOT(onTabContextMenuRequest(int)));
+    //connect(ui->tabWidget, SIGNAL(tabBarClicked(int)),this, SLOT(onTabContextMenuRequest(int)));
 
 
     timerLabelRefresh = new QTimer();
     connect(timerLabelRefresh, SIGNAL(timeout()), this, SLOT(timerLabelRefreshSlot()));
     timerLabelRefresh->start(1000);
+
+    totalTimeSaveTimer = new QTimer();
+    connect(totalTimeSaveTimer, SIGNAL(timeout()), this, SLOT(saveTime()));
+    totalTimeSaveTimer->start(5*60*1000); //5min
 
 
     startTimeString = QDateTime().currentDateTime().toString("hh:mm:ss  dd/MM/yyyy");
@@ -46,11 +51,17 @@ Widget::Widget(QWidget *parent) :
 
     ui->labelStartTime->setText(startTimeString);
     ui->labelDiffTime->setText(diffTimeString);
+
+    connect(qApp, SIGNAL(commitDataRequest(QSessionManager & )), this, SLOT(saveTime()));
 }
 
 
 Widget::~Widget()
 {
+    delete totalTimeSaveTimer;
+    delete timerLabelRefresh;
+    delete timerZapisu;
+
     saveTime();
     saveNotes();
     saveWindowGeometry();
@@ -71,7 +82,6 @@ Widget::~Widget()
     {
         delete newTabNameForm;
     }
-
 }
 
 
@@ -145,7 +155,7 @@ QString Widget::secondsToString(qint64 seconds)
 }
 
 
-void Widget::setEditTabProperties(QTextEdit * textEdit)
+void Widget::setEditTabProperties(QTextEdit * /*textEdit*/)
 {
 
 }

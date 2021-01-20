@@ -47,11 +47,12 @@ private:
     void createMinimalizeToTry();
     QString getDiffTimeString();
     qint64 getDiffTimeInt();
-    void saveTime();
+
     QString getCurrentDate();
 
 private slots:
     void timerLabelRefreshSlot();
+    void saveTime();
 
 private:
     Ui::Widget *ui;
@@ -63,6 +64,7 @@ private:
    NewTabNameForm * newTabNameForm = nullptr;
 
    QTimer * timerZapisu;
+   QTimer * totalTimeSaveTimer;
    QTimer * timerLabelRefresh;
 
     QSystemTrayIcon *icon;
