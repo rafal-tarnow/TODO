@@ -11,6 +11,9 @@
 #include <QDateTime>
 #include <QApplication>
 
+#include <unistd.h>
+#include <sys/socket.h>
+
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget),
@@ -53,6 +56,62 @@ Widget::Widget(QWidget *parent) :
     ui->labelDiffTime->setText(diffTimeString);
 
     connect(qApp, SIGNAL(commitDataRequest(QSessionManager & )), this, SLOT(saveTime()));
+
+    //HANDLE UNIX SIGNALS IN QT
+    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sighupFd))
+        qFatal("Couldn't create HUP socketpair");
+
+    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigtermFd))
+        qFatal("Couldn't create TERM socketpair");
+    snHup = new QSocketNotifier(sighupFd[1], QSocketNotifier::Read, this);
+    connect(snHup, SIGNAL(activated(QSocketDescriptor)), this, SLOT(handleSigHup()));
+    snTerm = new QSocketNotifier(sigtermFd[1], QSocketNotifier::Read, this);
+    connect(snTerm, SIGNAL(activated(QSocketDescriptor)), this, SLOT(handleSigTerm()));
+
+}
+
+
+int Widget::sighupFd[2];
+int Widget::sigtermFd[2];
+
+void Widget::hupSignalHandler(int)
+{
+    char a = 1;
+    ::write(sighupFd[0], &a, sizeof(a));
+}
+
+void Widget::termSignalHandler(int)
+{
+    char a = 1;
+    ::write(sigtermFd[0], &a, sizeof(a));
+}
+
+void Widget::handleSigTerm()
+{
+    snTerm->setEnabled(false);
+    char tmp;
+    ::read(sigtermFd[1], &tmp, sizeof(tmp));
+
+    // do Qt stuff
+    QSettings settings(organizationName, applicationName);
+    settings.setValue("SIGNAL TERM", true);
+    settings.sync();
+
+    snTerm->setEnabled(true);
+}
+
+void Widget::handleSigHup()
+{
+    snHup->setEnabled(false);
+    char tmp;
+    ::read(sighupFd[1], &tmp, sizeof(tmp));
+
+    // do Qt stuff
+    QSettings settings(organizationName, applicationName);
+    settings.setValue("SIGNAL HUP", true);
+    settings.sync();
+
+    snHup->setEnabled(true);
 }
 
 

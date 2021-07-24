@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <QTextEdit>
 #include <QPoint>
+#include <QSocketNotifier>
 #include "newtabnameform.hpp"
 
 namespace Ui {
@@ -21,6 +22,23 @@ class Widget : public QWidget
 public:
     explicit Widget(QWidget *parent = 0);
     ~Widget();
+
+
+// Unix signal handlers.
+    static void hupSignalHandler(int unused);
+    static void termSignalHandler(int unused);
+
+public slots:
+   // Qt signal handlers.
+   void handleSigHup();
+   void handleSigTerm();
+
+ private:
+   static int sighupFd[2];
+   static int sigtermFd[2];
+
+   QSocketNotifier *snHup;
+   QSocketNotifier *snTerm;
 
 protected:
 
@@ -57,15 +75,15 @@ private slots:
 private:
     Ui::Widget *ui;
 
-   const QString organizationName;
-   const QString applicationName;
-   const QString notesContetKey;
+    const QString organizationName;
+    const QString applicationName;
+    const QString notesContetKey;
 
-   NewTabNameForm * newTabNameForm = nullptr;
+    NewTabNameForm * newTabNameForm = nullptr;
 
-   QTimer * timerZapisu;
-   QTimer * totalTimeSaveTimer;
-   QTimer * timerLabelRefresh;
+    QTimer * timerZapisu;
+    QTimer * totalTimeSaveTimer;
+    QTimer * timerLabelRefresh;
 
     QSystemTrayIcon *icon;
     QMenu *menu;
