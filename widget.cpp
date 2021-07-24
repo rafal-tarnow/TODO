@@ -293,24 +293,28 @@ void Widget::restoreTime()
 {
     QSettings settings(organizationName, applicationName);
 
-    QString currentDateSave = settings.value("currentDate").toString();
+    QString lastDataStarted = settings.value("lastDataStarted").toString();
+    settings.setValue("lastDataStarted", getCurrentDate());
+
     QString currentDate = getCurrentDate();
 
-    if(currentDateSave != currentDate)
+    if(lastDataStarted != currentDate)
     {
         totalTime = 0;
+        settings.setValue("totalTime", 0);
     }
     else
     {
         totalTime = settings.value("totalTime").toInt();
     }
+
+    settings.sync();
 }
 
 
 void Widget::saveTime()
 {
     QSettings settings(organizationName, applicationName);
-    settings.setValue("currentDate", getCurrentDate());
     settings.setValue("totalTime", totalTime + getDiffTimeInt());
     settings.sync();
 }
