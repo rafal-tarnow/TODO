@@ -9,6 +9,7 @@
 #include <QTextEdit>
 #include <QPoint>
 #include <QSocketNotifier>
+#include <QSplashScreen>
 #include "newtabnameform.hpp"
 
 namespace Ui {
@@ -85,6 +86,8 @@ private:
     QTimer * totalTimeSaveTimer;
     QTimer * timerLabelRefresh;
 
+    QSplashScreen *turnOffSplash = nullptr;
+
     QSystemTrayIcon *icon;
     QMenu *menu;
     QAction *hide_window;
@@ -96,6 +99,8 @@ private:
     QString diffTimeString;
     qint64 totalTime;
     QString secondsToString(qint64 seconds);
+    void turnOffPC();
+    void prepareTurnOffPC();
 };
 
 #endif // WIDGET_HPP

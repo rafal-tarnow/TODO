@@ -5,11 +5,11 @@
 #include <QPainter>
 #include <QSettings>
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QDebug>
 #include <QMessageBox>
 #include <QDateTime>
 #include <QApplication>
+#include <QProcess>
 
 #include <unistd.h>
 #include <sys/socket.h>
@@ -67,7 +67,6 @@ Widget::Widget(QWidget *parent) :
     connect(snHup, SIGNAL(activated(QSocketDescriptor)), this, SLOT(handleSigHup()));
     snTerm = new QSocketNotifier(sigtermFd[1], QSocketNotifier::Read, this);
     connect(snTerm, SIGNAL(activated(QSocketDescriptor)), this, SLOT(handleSigTerm()));
-
 }
 
 
@@ -117,6 +116,8 @@ void Widget::handleSigHup()
 
 Widget::~Widget()
 {
+    delete turnOffSplash;
+
     delete totalTimeSaveTimer;
     delete timerLabelRefresh;
     delete timerZapisu;
@@ -183,9 +184,38 @@ void Widget::createMinimalizeToTry(void)
 void Widget::timerLabelRefreshSlot()
 {
     diffTimeString = getDiffTimeString();
-    ui->labelDiffTime->setText(secondsToString(diffTimeString.toInt()));
+    //quint64 userSessiontime_sec ?
+    quint64 progamSessionTime_sec = diffTimeString.toInt();
+    quint64 dayTime_sec = totalTime + getDiffTimeInt();
+    ui->labelDiffTime->setText(secondsToString(progamSessionTime_sec));
+    ui->labelTotalTime->setText(secondsToString(dayTime_sec));
 
-    ui->labelTotalTime->setText(secondsToString(totalTime + getDiffTimeInt()));
+    if(dayTime_sec >= 60*60){ //60min*60second
+        prepareTurnOffPC();
+    }
+}
+
+
+void Widget::prepareTurnOffPC(){
+    if(turnOffSplash == nullptr){
+        QPixmap pixmap(":/images/splash.svg");
+        turnOffSplash = new QSplashScreen(pixmap);
+        turnOffSplash->show();
+        //QTimer::singleShot(3*60*1000, [&]() {
+            turnOffPC();
+        //});
+    }
+}
+
+void Widget::turnOffPC()
+{
+    qDebug() << "Widget::turnOffPC()";
+    QProcess process;
+    process.start("shutdown", QStringList() << "-h" << "now");
+
+    if (!process.waitForStarted() || !process.waitForFinished()) {
+        qDebug() << "Failed to execute the shutdown command.";
+    }
 }
 
 
