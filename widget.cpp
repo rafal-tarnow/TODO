@@ -210,6 +210,7 @@ void Widget::prepareTurnOffPC(){
 void Widget::turnOffPC()
 {
     qDebug() << "Widget::turnOffPC()";
+    saveTime();
     QProcess process;
     process.start("shutdown", QStringList() << "-h" << "now");
 
