@@ -101,6 +101,7 @@ private:
     QString secondsToString(qint64 seconds);
     void turnOffPC();
     void prepareTurnOffPC();
+    bool timePassed(const QTime &timeToCompare);
 };
 
 #endif // WIDGET_HPP

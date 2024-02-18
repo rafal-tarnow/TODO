@@ -190,9 +190,20 @@ void Widget::timerLabelRefreshSlot()
     ui->labelDiffTime->setText(secondsToString(progamSessionTime_sec));
     ui->labelTotalTime->setText(secondsToString(dayTime_sec));
 
-    if(dayTime_sec >= 60*60){ //60min*60second
+    QTime sprawdzanaGodzina(18, 0); // Godzina 18:00
+    if (!timePassed(sprawdzanaGodzina)) {
         prepareTurnOffPC();
     }
+
+    if(dayTime_sec >= 3*60*60){ //LIMIT TIME 60min*60second
+        prepareTurnOffPC();
+    }
+}
+
+bool Widget::timePassed(const QTime &timeToCompare)
+{
+    QTime now = QTime::currentTime();
+    return now >= timeToCompare;
 }
 
 
