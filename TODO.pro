@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui multimedia
+QT       += core gui multimedia quickwidgets quickcontrols2
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -13,14 +13,20 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
+    settingsdialog.cpp \
         widget.cpp \
     newtabnameform.cpp
 
 HEADERS  += widget.hpp \
-    newtabnameform.hpp
+    newtabnameform.hpp \
+    settingsdialog.h
 
 FORMS    += widget.ui \
-    newtabnameform.ui
+    newtabnameform.ui \
+    settingsdialog.ui
 
 RESOURCES += \
     resources.qrc
+    MenuBar.qml
+    SettingsDialogQml.qml
+

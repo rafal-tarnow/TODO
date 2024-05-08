@@ -10,9 +10,11 @@
 #include <QDateTime>
 #include <QApplication>
 #include <QProcess>
+#include <QQmlEngine>
+#include <QQmlContext>
 
 #include <unistd.h>
-#include <sys/socket.h>
+//#include <sys/socket.h>
 
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
@@ -58,7 +60,7 @@ Widget::Widget(QWidget *parent) :
     connect(qApp, SIGNAL(commitDataRequest(QSessionManager & )), this, SLOT(saveTime()));
 
     //HANDLE UNIX SIGNALS IN QT
-    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sighupFd))
+   /* if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sighupFd))
         qFatal("Couldn't create HUP socketpair");
 
     if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigtermFd))
@@ -66,7 +68,10 @@ Widget::Widget(QWidget *parent) :
     snHup = new QSocketNotifier(sighupFd[1], QSocketNotifier::Read, this);
     connect(snHup, SIGNAL(activated(QSocketDescriptor)), this, SLOT(handleSigHup()));
     snTerm = new QSocketNotifier(sigtermFd[1], QSocketNotifier::Read, this);
-    connect(snTerm, SIGNAL(activated(QSocketDescriptor)), this, SLOT(handleSigTerm()));
+    connect(snTerm, SIGNAL(activated(QSocketDescriptor)), this, SLOT(handleSigTerm()));*/
+
+    qmlEngine = ui->quickWidget->engine();
+    qmlEngine->rootContext()->setContextProperty("backend", this);
 }
 
 
@@ -142,6 +147,20 @@ Widget::~Widget()
     {
         delete newTabNameForm;
     }
+
+    if(settingsDialog != nullptr)
+    {
+        delete settingsDialog;
+    }
+}
+
+void Widget::showSettings()
+{
+    if(settingsDialog == nullptr)
+    {
+        settingsDialog = new SettingsDialog();
+    }
+    settingsDialog->show();
 }
 
 
@@ -190,12 +209,12 @@ void Widget::timerLabelRefreshSlot()
     ui->labelDiffTime->setText(secondsToString(progamSessionTime_sec));
     ui->labelTotalTime->setText(secondsToString(dayTime_sec));
 
-    QTime sprawdzanaGodzina(18, 0); // Godzina 18:00
+    QTime sprawdzanaGodzina(14, 0); // Godzina 18:00
     if (!timePassed(sprawdzanaGodzina)) {
         prepareTurnOffPC();
     }
 
-    if(dayTime_sec >= 3*60*60){ //LIMIT TIME 60min*60second
+    if(dayTime_sec >= 5*60*60){ //LIMIT TIME 60min*60second
         prepareTurnOffPC();
     }
 }
@@ -212,18 +231,34 @@ void Widget::prepareTurnOffPC(){
         QPixmap pixmap(":/images/splash.svg");
         turnOffSplash = new QSplashScreen(pixmap);
         turnOffSplash->show();
-        //QTimer::singleShot(3*60*1000, [&]() {
-            turnOffPC();
-        //});
+            //turnOffPC();
     }
 }
+
+
+// Makro dla systemu Windows
+#ifdef Q_OS_WIN
+#define SHUTDOWN_COMMAND "shutdown"
+#define SHUTDOWN_ARGS QStringList() << "/s" << "/t" << "0"
+#endif
+
+// Makro dla systemu Linux
+#ifdef Q_OS_LINUX
+#define SHUTDOWN_COMMAND "shutdown"
+#define SHUTDOWN_ARGS QStringList() << "-h" << "now"
+#endif
 
 void Widget::turnOffPC()
 {
     qDebug() << "Widget::turnOffPC()";
     saveTime();
     QProcess process;
-    process.start("shutdown", QStringList() << "-h" << "now");
+    // Ustawiamy polecenie do wykonania
+    QString command = SHUTDOWN_COMMAND;
+    QStringList args = SHUTDOWN_ARGS;
+
+    // Uruchamiamy proces z odpowiednimi argumentami
+    process.start(command, args);
 
     if (!process.waitForStarted() || !process.waitForFinished()) {
         qDebug() << "Failed to execute the shutdown command.";

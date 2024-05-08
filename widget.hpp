@@ -10,7 +10,9 @@
 #include <QPoint>
 #include <QSocketNotifier>
 #include <QSplashScreen>
+#include <qqml.h>
 #include "newtabnameform.hpp"
+#include "settingsdialog.h"
 
 namespace Ui {
 class Widget;
@@ -19,10 +21,10 @@ class Widget;
 class Widget : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit Widget(QWidget *parent = 0);
     ~Widget();
+    Q_INVOKABLE void showSettings();
 
 
 // Unix signal handlers.
@@ -80,7 +82,10 @@ private:
     const QString applicationName;
     const QString notesContetKey;
 
+    QQmlEngine * qmlEngine = nullptr;
+
     NewTabNameForm * newTabNameForm = nullptr;
+    SettingsDialog * settingsDialog = nullptr;
 
     QTimer * timerZapisu;
     QTimer * totalTimeSaveTimer;

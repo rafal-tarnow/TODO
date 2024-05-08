@@ -1,8 +1,12 @@
 <RCC>
-    <qresource prefix="/wav">
+    <qresource prefix="/sounds">
         <file>mixkit-retro-game-emergency-alarm-1000.wav</file>
     </qresource>
     <qresource prefix="/images">
         <file>splash.svg</file>
+    </qresource>
+    <qresource prefix="/qml">
+        <file>MenuBar.qml</file>
+        <file>SettingsDialogQml.qml</file>
     </qresource>
 </RCC>
