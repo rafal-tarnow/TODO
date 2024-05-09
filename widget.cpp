@@ -21,18 +21,33 @@ Widget::Widget(QWidget *parent) :
     ui(new Ui::Widget),
     organizationName("Reyfel"),
     applicationName("TODO List"),
-    notesContetKey("NotesContent")
+    notesContetKey("NotesContent"),
+    mPreviousSessionTime(0,0),
+    mThisSessionTime(0,0),
+    mTotalSessionTime(0,0),
+    mStartTimeLimit(0,0),
+    mTotalTimeLimit(0,0)
 {
     ui->setupUi(this);
+
+    qmlEngine = ui->quickWidget->engine();
+    qmlEngine->rootContext()->setContextProperty("backend", this);
+
     this->setWindowTitle(applicationName);
     this->setAttribute(Qt::WA_DeleteOnClose);
     setWindowFlags(/*Qt::FramelessWindowHint |*/ Qt::WindowStaysOnBottomHint);
 
     createMinimalizeToTry();
 
+    mAppStart = QDateTime::currentDateTime();
     readAndSetWindowGeometry();
     restoreNotes();
     restoreTime();
+
+    readLimitTotalTimeFlag();
+    readLimitStartTimeFlag();
+    readTotalTimeLimit();
+    readStartTimeLimit();
 
     ui->tabWidget->setMovable(true);
 
@@ -42,25 +57,17 @@ Widget::Widget(QWidget *parent) :
 
 
     timerLabelRefresh = new QTimer();
-    connect(timerLabelRefresh, SIGNAL(timeout()), this, SLOT(timerLabelRefreshSlot()));
+    connect(timerLabelRefresh, SIGNAL(timeout()), this, SLOT(update()));
     timerLabelRefresh->start(1000);
 
     totalTimeSaveTimer = new QTimer();
     connect(totalTimeSaveTimer, SIGNAL(timeout()), this, SLOT(saveTime()));
     totalTimeSaveTimer->start(5*60*1000); //5min
 
-
-    startTimeString = QDateTime().currentDateTime().toString("hh:mm:ss  dd/MM/yyyy");
-    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss  dd/MM/yyyy");
-    diffTimeString = QString("%1").arg(QDateTime().fromString(startTimeString ,"hh:mm:ss  dd/MM/yyyy").msecsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss AP dd/MM/yyyy")));
-
-    ui->labelStartTime->setText(startTimeString);
-    ui->labelDiffTime->setText(diffTimeString);
-
     connect(qApp, SIGNAL(commitDataRequest(QSessionManager & )), this, SLOT(saveTime()));
 
     //HANDLE UNIX SIGNALS IN QT
-   /* if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sighupFd))
+    /* if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sighupFd))
         qFatal("Couldn't create HUP socketpair");
 
     if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigtermFd))
@@ -70,8 +77,6 @@ Widget::Widget(QWidget *parent) :
     snTerm = new QSocketNotifier(sigtermFd[1], QSocketNotifier::Read, this);
     connect(snTerm, SIGNAL(activated(QSocketDescriptor)), this, SLOT(handleSigTerm()));*/
 
-    qmlEngine = ui->quickWidget->engine();
-    qmlEngine->rootContext()->setContextProperty("backend", this);
 }
 
 
@@ -156,11 +161,74 @@ Widget::~Widget()
 
 void Widget::showSettings()
 {
-    if(settingsDialog == nullptr)
-    {
-        settingsDialog = new SettingsDialog();
+    // if(settingsDialog == nullptr)
+    // {
+    //     settingsDialog = new SettingsDialog();
+    // }
+    // settingsDialog->show();
+}
+
+bool Widget::limitTotalTimeFlag()
+{
+    return mLimitTotalTimeFlag;
+}
+
+void Widget::setLimitTotalTimeFlag(bool limit)
+{
+    qDebug() << __FUNCTION__ << limit;
+    if(mLimitTotalTimeFlag != limit){
+        mLimitTotalTimeFlag = limit;
+        saveLimitTotalTimeFlag();
+        emit limitTotalTimeFlagChanged();
     }
-    settingsDialog->show();
+}
+
+bool Widget::limitStartTimeFlag()
+{
+    return mLimitStartTimeFlag;
+}
+
+void Widget::setLimitStartTimeFlag(bool limit)
+{
+    qDebug() << __FUNCTION__ << limit;
+    if(mLimitStartTimeFlag != limit){
+        mLimitStartTimeFlag = limit;
+        saveLimitStartTimeFlag();
+        emit limitStartTimeFlagChanged();
+    }
+}
+
+QString Widget::startTimeLimit()
+{
+    return mStartTimeLimit.toString("hh:mm");
+}
+
+
+void Widget::setStartTimeLimit(QString time)
+{
+    qDebug() << __FUNCTION__ << time;
+    QTime startTime = QTime::fromString(time, "hh:mm");
+    if(mStartTimeLimit != startTime){
+        mStartTimeLimit = startTime;
+        saveStartTimeLimit();
+        emit startTimeLimitChanged();
+    }
+}
+
+QString Widget::totalTimeLimit()
+{
+    return mTotalTimeLimit.toString("hh:mm");
+}
+
+void Widget::setTotalTimeLimit(QString time)
+{
+    qDebug() << __FUNCTION__ << time;
+    QTime totalTime = QTime::fromString(time, "hh:mm");
+    if(mTotalTimeLimit != totalTime){
+        mTotalTimeLimit = totalTime;
+        saveTotalTimeLimit();
+        emit totalTimeLimitChanged();
+    }
 }
 
 
@@ -200,23 +268,29 @@ void Widget::createMinimalizeToTry(void)
 }
 
 
-void Widget::timerLabelRefreshSlot()
+void Widget::update()
 {
-    diffTimeString = getDiffTimeString();
-    //quint64 userSessiontime_sec ?
-    quint64 progamSessionTime_sec = diffTimeString.toInt();
-    quint64 dayTime_sec = totalTime + getDiffTimeInt();
-    ui->labelDiffTime->setText(secondsToString(progamSessionTime_sec));
-    ui->labelTotalTime->setText(secondsToString(dayTime_sec));
+    mThisSessionTime = QTime(0,0).addMSecs(mAppStart.msecsTo(QDateTime::currentDateTime()));
+    mTotalSessionTime = QTime(0,0).addMSecs(mPreviousSessionTime.msecsSinceStartOfDay() + mThisSessionTime.msecsSinceStartOfDay());
 
-    QTime sprawdzanaGodzina(14, 0); // Godzina 18:00
-    if (!timePassed(sprawdzanaGodzina)) {
-        prepareTurnOffPC();
+    ui->label_mTotalTimeLimit->setText("mTotalTimeLimit=" + mTotalTimeLimit.toString());
+    ui->label_mTotalSessionTime->setText("mTotalSessionTime=" + mTotalSessionTime.toString());
+    ui->label_mThisSessionTime->setText("mThisSessionTime=" + mThisSessionTime.toString());
+    ui->label_mPreviousSessionTime->setText("mPreviousSessionTime=" + mPreviousSessionTime.toString());
+
+
+    if(mLimitStartTimeFlag){
+        if(QDateTime::currentDateTime().time() < mStartTimeLimit){
+            prepareTurnOffPC();
+        }
     }
 
-    if(dayTime_sec >= 5*60*60){ //LIMIT TIME 60min*60second
-        prepareTurnOffPC();
+    if(mLimitTotalTimeFlag){
+        if(mTotalSessionTime > mTotalTimeLimit){
+            prepareTurnOffPC();
+        }
     }
+
 }
 
 bool Widget::timePassed(const QTime &timeToCompare)
@@ -231,7 +305,7 @@ void Widget::prepareTurnOffPC(){
         QPixmap pixmap(":/images/splash.svg");
         turnOffSplash = new QSplashScreen(pixmap);
         turnOffSplash->show();
-            //turnOffPC();
+        turnOffPC();
     }
 }
 
@@ -266,28 +340,13 @@ void Widget::turnOffPC()
 }
 
 
-QString Widget::getDiffTimeString()
-{
-    QString diffTimeStringTmp;
-    diffTimeStringTmp = QString("%1").arg(getDiffTimeInt());
-    return diffTimeStringTmp;
-}
-
-
-qint64 Widget::getDiffTimeInt()
-{
-    currentTimeString = QDateTime().currentDateTime().toString("hh:mm:ss  dd/MM/yyyy");
-    return QDateTime().fromString(startTimeString ,"hh:mm:ss  dd/MM/yyyy").secsTo(QDateTime().fromString(currentTimeString ,"hh:mm:ss  dd/MM/yyyy"));
-}
-
-
 QString Widget::secondsToString(qint64 seconds)
 {
     const qint64 DAY = 86400;
     qint64 days = seconds / DAY;
     QTime t = QTime(0,0).addSecs(seconds % DAY);
     return QString("%1 days, %2 hours, %3 minutes, %4 seconds")
-            .arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
+        .arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
 }
 
 
@@ -333,7 +392,7 @@ void Widget::deleteTabRequest()
     else
     {
         // do something else
-    }
+        }
 }
 
 
@@ -436,12 +495,12 @@ void Widget::restoreTime()
 
     if(lastDataStarted != currentDate)
     {
-        totalTime = 0;
-        settings.setValue("totalTime", 0);
+        mPreviousSessionTime = QTime::fromString("00:00","hh:mm");
+        settings.setValue("sessionTime", mPreviousSessionTime);
     }
     else
     {
-        totalTime = settings.value("totalTime").toInt();
+        mPreviousSessionTime = settings.value("sessionTime").toTime();
     }
 
     settings.sync();
@@ -451,8 +510,63 @@ void Widget::restoreTime()
 void Widget::saveTime()
 {
     QSettings settings(organizationName, applicationName);
-    settings.setValue("totalTime", totalTime + getDiffTimeInt());
+    settings.setValue("sessionTime", mTotalSessionTime);
     settings.sync();
+}
+
+void Widget::saveLimitTotalTimeFlag()
+{
+    QSettings settings(organizationName, applicationName);
+    settings.setValue("limitTotalTimeFlag", mLimitTotalTimeFlag);
+    settings.sync();
+}
+
+void Widget::saveLimitStartTimeFlag()
+{
+    QSettings settings(organizationName, applicationName);
+    settings.setValue("limitStartTimeFlag", mLimitStartTimeFlag);
+    settings.sync();
+}
+
+void Widget::saveTotalTimeLimit()
+{
+    QSettings settings(organizationName, applicationName);
+    settings.setValue("totalTimeLimit", mTotalTimeLimit);
+    settings.sync();
+}
+
+void Widget::saveStartTimeLimit()
+{
+    QSettings settings(organizationName, applicationName);
+    settings.setValue("startTimeLimit", mStartTimeLimit);
+    settings.sync();
+}
+
+
+void Widget::readLimitTotalTimeFlag()
+{
+    QSettings settings(organizationName, applicationName);
+    setLimitTotalTimeFlag(settings.value("limitTotalTimeFlag").toBool());
+}
+
+void Widget::readLimitStartTimeFlag()
+{
+    QSettings settings(organizationName, applicationName);
+    setLimitStartTimeFlag(settings.value("limitStartTimeFlag").toBool());
+}
+
+void Widget::readTotalTimeLimit()
+{
+    QSettings settings(organizationName, applicationName);
+    mTotalTimeLimit = settings.value("totalTimeLimit").toTime();
+    emit totalTimeLimitChanged();
+}
+
+void Widget::readStartTimeLimit()
+{
+    QSettings settings(organizationName, applicationName);
+    mStartTimeLimit = settings.value("startTimeLimit").toTime();
+    emit startTimeLimitChanged();
 }
 
 

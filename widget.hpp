@@ -10,6 +10,7 @@
 #include <QPoint>
 #include <QSocketNotifier>
 #include <QSplashScreen>
+#include <QTime>
 #include <qqml.h>
 #include "newtabnameform.hpp"
 #include "settingsdialog.h"
@@ -24,12 +25,34 @@ class Widget : public QWidget
 public:
     explicit Widget(QWidget *parent = 0);
     ~Widget();
+
+    Q_PROPERTY(bool limitTotalTimeFlag READ limitTotalTimeFlag WRITE setLimitTotalTimeFlag NOTIFY limitTotalTimeFlagChanged FINAL)
+    Q_PROPERTY(bool limitStartTimeFlag READ limitStartTimeFlag WRITE setLimitStartTimeFlag NOTIFY limitStartTimeFlagChanged FINAL)
+    Q_PROPERTY(QString startTimeLimit READ startTimeLimit WRITE setStartTimeLimit NOTIFY startTimeLimitChanged FINAL)
+    Q_PROPERTY(QString totalTimeLimit READ totalTimeLimit WRITE setTotalTimeLimit NOTIFY totalTimeLimitChanged FINAL)
     Q_INVOKABLE void showSettings();
 
+    bool limitTotalTimeFlag();
+    void setLimitTotalTimeFlag(bool limit);
+
+    bool limitStartTimeFlag();
+    void setLimitStartTimeFlag(bool limit);
+
+    QString startTimeLimit();
+    void setStartTimeLimit(QString startTime);
+
+    QString totalTimeLimit();
+    void setTotalTimeLimit(QString startTime);
 
 // Unix signal handlers.
     static void hupSignalHandler(int unused);
     static void termSignalHandler(int unused);
+
+signals:
+    void limitTotalTimeFlagChanged();
+    void limitStartTimeFlagChanged();
+    void startTimeLimitChanged();
+    void totalTimeLimitChanged();
 
 public slots:
    // Qt signal handlers.
@@ -66,17 +89,35 @@ private:
     void saveNotes();
     void closeEvent(QCloseEvent *event);
     void createMinimalizeToTry();
-    QString getDiffTimeString();
-    qint64 getDiffTimeInt();
 
     QString getCurrentDate();
 
 private slots:
-    void timerLabelRefreshSlot();
+    void update();
     void saveTime();
+    void saveLimitTotalTimeFlag();
+    void saveLimitStartTimeFlag();
+    void saveTotalTimeLimit();
+    void saveStartTimeLimit();
+
+    void readLimitTotalTimeFlag();
+    void readLimitStartTimeFlag();
+    void readTotalTimeLimit();
+    void readStartTimeLimit();
 
 private:
     Ui::Widget *ui;
+
+    QDateTime mAppStart;
+
+    QTime mPreviousSessionTime;
+    QTime mThisSessionTime;
+    QTime mTotalSessionTime;
+
+    QTime mStartTimeLimit;
+    QTime mTotalTimeLimit;
+    bool mLimitStartTimeFlag = true;
+    bool mLimitTotalTimeFlag = true;
 
     const QString organizationName;
     const QString applicationName;
@@ -99,10 +140,6 @@ private:
     QAction *quitAction;
     QAction *restore;
 
-    QString startTimeString;
-    QString currentTimeString;
-    QString diffTimeString;
-    qint64 totalTime;
     QString secondsToString(qint64 seconds);
     void turnOffPC();
     void prepareTurnOffPC();
