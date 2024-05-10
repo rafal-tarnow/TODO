@@ -3,7 +3,8 @@ import QtQuick.Controls
 
 Window {
     id: root
-
+    width: 320
+    height: 150
 
     Column {
         anchors.fill: parent
@@ -15,23 +16,23 @@ Window {
                     backend.limitTotalTimeFlag = checked
                 }
             }
-            TextField{
+            TextField {
                 text: backend.totalTimeLimit
                 inputMask: "99:99"
                 inputMethodHints: Qt.ImhDigitsOnly
                 //validator: RegularExpressionValidator { regularExpression: /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/ }
-                width:100
-                background:Rectangle{
-                    color:"transparent"
+                width: 100
+                background: Rectangle {
+                    color: "transparent"
                     border.color: "gray"
-                    border.width:2
-                    radius:(width * 0.05)
+                    border.width: 2
+                    radius: (width * 0.05)
                 }
                 onEditingFinished: {
-                    backend.totalTimeLimit = text;
+                    backend.totalTimeLimit = text
                 }
             }
-            Label{
+            Label {
                 text: qsTr("hh:mm")
             }
         }
@@ -43,34 +44,34 @@ Window {
                     backend.limitStartTimeFlag = checked
                 }
             }
-            TextField{
-                id:startTimeLimitText
+            TextField {
+                id: startTimeLimitText
                 text: backend.startTimeLimit
                 inputMask: "99:99"
                 inputMethodHints: Qt.ImhDigitsOnly
                 //validator: RegularExpressionValidator { regularExpression: /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/ }
-                width:100
-                background:Rectangle{
-                    color:"transparent"
+                width: 100
+                background: Rectangle {
+                    color: "transparent"
                     border.color: "grey"
-                    border.width:2
-                    radius:(width * 0.05)
+                    border.width: 2
+                    radius: (width * 0.05)
                 }
                 onEditingFinished: {
-                    backend.startTimeLimit = text;
+                    backend.startTimeLimit = text
                 }
             }
-            Label{
+            Label {
                 text: qsTr("hh:mm")
             }
         }
     }
-    Button{
+    Button {
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         text: "OK"
         onClicked: {
-            root.close();
+            root.close()
         }
     }
 }

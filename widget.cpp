@@ -433,7 +433,13 @@ void Widget::readAndSetWindowGeometry()
     windowHeight = settings.value("windowHeight").toInt();
     windowWidth = settings.value("windowWidth").toInt();
     windowXposition = settings.value("windowXposition").toInt();
+    if(windowXposition<0){
+        windowXposition = 0;
+    }
     windowYposition = settings.value("windowYposition").toInt();
+    if(windowYposition<=0){
+        windowYposition = 30;
+    }
 
     if(windowHeight < 70){
         windowHeight = 320;
@@ -558,15 +564,21 @@ void Widget::readLimitStartTimeFlag()
 void Widget::readTotalTimeLimit()
 {
     QSettings settings(organizationName, applicationName);
-    mTotalTimeLimit = settings.value("totalTimeLimit").toTime();
-    emit totalTimeLimitChanged();
+    QTime totalTimeLimit = settings.value("totalTimeLimit").toTime();
+    if(totalTimeLimit.isValid()){
+        mTotalTimeLimit = totalTimeLimit;
+        emit totalTimeLimitChanged();
+    }
 }
 
 void Widget::readStartTimeLimit()
 {
     QSettings settings(organizationName, applicationName);
-    mStartTimeLimit = settings.value("startTimeLimit").toTime();
-    emit startTimeLimitChanged();
+    QTime startTimeLimit = settings.value("startTimeLimit").toTime();
+    if(startTimeLimit.isValid()){
+        mStartTimeLimit = startTimeLimit;
+        emit startTimeLimitChanged();
+    }
 }
 
 
